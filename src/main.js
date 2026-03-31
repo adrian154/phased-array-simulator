@@ -5,14 +5,25 @@ const mainCanvas = document.getElementById("main-view"),
 // TODO
 
 // phased array parameters
-const WAVELENGTH = 30;
-let separation = 1; // measured in wavelengths
+let waveFrequency = 3;
+let sourceCount = 5;
+let separation = 30;
+
+// resize canvas
+const resizeCanvas = () => {
+    const rect = mainCanvas.getBoundingClientRect();
+    mainCanvas.width = rect.width * window.devicePixelRatio;
+    mainCanvas.height = rect.height * window.devicePixelRatio;
+};
 
 // webgl objects
 let glReady = false;
 const glUniforms = {
-    resolution: null,
-    time: null
+    resolution: {name: "inResolution"},
+    time: {name: "inTime"},
+    frequency: {name: "inFreq"},
+    sourceCount: {name: "inSourceCount"},
+    separation: {name: "inSeparation"}
 };
 
 const makeShader = async (url, type) => {
@@ -76,15 +87,19 @@ const setupWebgl = async () => {
     gl.useProgram(program);
 
     // lookup uniform locations
-    glUniforms.resolution = gl.getUniformLocation(program, "inResolution");
-    glUniforms.time = gl.getUniformLocation(program, "inTime");
+    for(const uniform in glUniforms) {
+        glUniforms[uniform].attr = gl.getUniformLocation(program, glUniforms[uniform].name);
+    }
     glReady = true;
 
 };
 
 const renderFields = (time) => {
-    gl.uniform2f(glUniforms.resolution, gl.canvas.width, gl.canvas.height);
-    gl.uniform1f(glUniforms.time, time);
+    gl.uniform2f(glUniforms.resolution.attr, gl.canvas.width, gl.canvas.height);
+    gl.uniform1f(glUniforms.time.attr, time);
+    gl.uniform1f(glUniforms.frequency.attr, waveFrequency);
+    gl.uniform1i(glUniforms.sourceCount.attr, sourceCount);
+    gl.uniform1f(glUniforms.separation.attr, separation);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 };
 
@@ -99,6 +114,11 @@ const draw = () => {
     }
     requestAnimationFrame(draw);
 };
+
+// ensure canvas always is appropriately sized
+resizeCanvas();
+const resizeObserver = new ResizeObserver(resizeCanvas);
+resizeObserver.observe(mainCanvas);
 
 setupWebgl();
 draw();
