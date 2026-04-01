@@ -4,6 +4,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Phased Array Simulator</title>
         <link rel="stylesheet" href="main.css">
+        <meta property="og:title" content="Phased Array Simulator">
     </head>
     <body>
         
@@ -22,15 +23,20 @@
             <label for="steering">Pointing angle: <span id="pointing-angle-display"></span></label>
             <input type="range" id="pointing-angle" min="0" max="180" step="any" value="90">
 
-            <p>
+            <div>
                 <label>Plot: </label>
                 <input type="radio" id="plot-magnitude" name="plot-type"><label for="plot-magnitude">Magnitude</label>
                 <input type="radio" id="plot-wave" name="plot-type" checked><label for="plot-wave">Wave</label>
-            </p>
+            </div>
 
             <p>
-                <input type="checkbox" id="plot-rad-pattern"><label for="plot-rad-pattern">Show radiation pattern</label>
+                <input type="checkbox" id="plot-rad-pattern"><label for="plot-rad-pattern">Draw array factor</label>
             </p>
+
+            <p>Max directivity: <span id="directivity"></span> dB</p>
+            <p>Half-power beam width: <span id="hpbw"></span>&deg;</p>
+
+            <p id="gh-link"><a href="https://github.com/adrian154/phased-array-simulator">Check me out on GitHub!</a></p>
 
         </div>
         <script src="main.js"></script>

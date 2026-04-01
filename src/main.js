@@ -13,6 +13,8 @@ const plotRadPatternButton = document.getElementById("plot-rad-pattern");
 const sourceCountDisplay = document.getElementById("source-count-display");
 const separationDisplay = document.getElementById("separation-display");
 const pointingAngleDisplay = document.getElementById("pointing-angle-display");
+const directivityDisplay = document.getElementById("directivity");
+const hpbwDisplay = document.getElementById("hpbw");
 
 if(!gl) {
     alert("WebGL not available :(");
@@ -39,6 +41,7 @@ const resizeCanvas = () => {
     mainCanvas.height = rect.height * window.devicePixelRatio;
     radPatternCanvas.width = mainCanvas.width;
     radPatternCanvas.height = mainCanvas.height;
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 };
 
 // webgl objects
@@ -50,7 +53,8 @@ const glUniforms = {
     sourceCount: {name: "inSourceCount"},
     separation: {name: "inSeparation"},
     plotMagnitude: {name: "inPlotMagnitude"},
-    pointingAngle: {name: "inPointAngle"}
+    pointingAngle: {name: "inPointAngle"},
+    brightness: {name: "inBrightness"}
 };
 
 const makeShader = async (url, type) => {
@@ -129,6 +133,7 @@ const renderFields = (time) => {
     gl.uniform1f(glUniforms.separation.attr, separation);
     gl.uniform1i(glUniforms.plotMagnitude.attr, plotMagnitudeButton.checked);
     gl.uniform1f(glUniforms.pointingAngle.attr, pointingAngle);
+    gl.uniform1f(glUniforms.brightness.attr, 100);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 };
 
@@ -144,25 +149,22 @@ const handleInput = () => {
     separationDisplay.textContent = `${Number(separation).toFixed(2)}\u03bb`;
     pointingAngleDisplay.textContent = `${Number(pointingAngleSlider.value).toFixed(2)}\u00b0`;
 
-    if(plotRadPatternButton.checked) {
-        plotRadPattern();
-    } else {
-        ctx.clearRect(0, 0, radPatternCanvas.width, radPatternCanvas.height);
-    }
+    calcRadPattern();
     
 };
 
-const plotRadPattern = () => {
+const calcRadPattern = () => {
 
     ctx.clearRect(0, 0, radPatternCanvas.width, radPatternCanvas.height);
+    ctx.strokeStyle = "#0084ff";
+    ctx.lineWidth = 2;
 
     const steeringPhase = Math.cos(pointingAngle) * separation * 2 * Math.PI;
-    
+    const sourceAmplitude = 1/sourceCount;
+
     const points = 1000;
-    const radius = 0.9 * Math.min(mainCanvas.width, mainCanvas.height)/2;
-    ctx.strokeStyle = "#ff9900";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
+    const intensity = new Array(1000);
+    const radius = 0.8 * Math.min(mainCanvas.width, mainCanvas.height)/2;
     for(let i = 0; i < points; i++) {
         
         const angle = i/points * 2*Math.PI;
@@ -171,22 +173,56 @@ const plotRadPattern = () => {
         for(let source = 0; source < sourceCount; source++) {
             const sourceX = separation*(source - sourceCount / 2);
             const phase = steeringPhase*source + Math.cos(angle)*sourceX*2*Math.PI;
-            phasorReal += Math.cos(phase) / sourceCount;
-            phasorImag += Math.sin(phase) / sourceCount;
+            phasorReal += sourceAmplitude * Math.cos(phase);
+            phasorImag += sourceAmplitude * Math.sin(phase);
         }
 
-        const mag = Math.sqrt(phasorReal**2 + phasorImag**2);
-        const x = radPatternCanvas.width / 2 + Math.cos(angle) * mag * radius;
-        const y = radPatternCanvas.height / 2 + Math.sin(angle) * mag * radius;
-       
-        if(i == 0)
-            ctx.moveTo(x, y);
-        else
-            ctx.lineTo(x, y);
+        const magnitude = Math.sqrt(phasorReal**2 + phasorImag**2);
+        intensity[i] = magnitude**2;
 
     }
-    ctx.closePath();
-    ctx.stroke();
+
+    if(plotRadPatternButton.checked) {
+        ctx.beginPath();
+        for(let i = 0; i < points; i++) {
+            const magnitude = Math.sqrt(intensity[i]);
+            const angle = i/points * 2 * Math.PI;
+            const x = radPatternCanvas.width / 2 + Math.cos(angle) * magnitude * radius;
+            const y = radPatternCanvas.height / 2 + Math.sin(angle) * magnitude * radius;
+            if(i == 0)
+                ctx.moveTo(x, y);
+            else
+                ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    const avgIntensity = intensity.reduce((a, b) => a + b, 0) / intensity.length;
+    const maxIntensity = Math.max(...intensity);
+    const maxDirectivity = maxIntensity/avgIntensity;
+    directivityDisplay.textContent = (10*Math.log10(maxDirectivity)).toFixed(1);
+
+    // find direction of max directivity; determine HPBW
+    const maxDirectivityIdx = intensity.indexOf(maxIntensity);
+    let hpbwSteps = 0;
+    for(let range = 1; range < points; range++) {
+        const i_left = (maxDirectivityIdx - range + points) % points;
+        const inext_left = (maxDirectivityIdx - range - 1 + points) % points;
+        const i_right = (maxDirectivityIdx + range) % points;
+        const inext_right = (maxDirectivityIdx + range + 1) % points;
+        if(intensity[i_left] >= maxIntensity/2 && intensity[inext_left] < maxIntensity/2 ||
+           intensity[i_right] >= maxIntensity/2 && intensity[inext_right] < maxIntensity/2) {
+            hpbwSteps = range;
+            break;
+        }
+    }
+
+    if(hpbwSteps) {
+        const hpbwDeg = hpbwSteps/points * 360;
+        hpbwDisplay.textContent = Math.round(hpbwDeg);
+    } else {
+        hpbwDisplay.textContent = "\u2014";
+    }
 
 };
 
