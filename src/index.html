@@ -6,7 +6,33 @@
         <link rel="stylesheet" href="main.css">
     </head>
     <body>
+        
         <canvas id="main-view"></canvas>
+        <canvas id="rad-pattern"></canvas>
+
+        <div id="controls">
+            
+            <label for="source-count">Number of sources: <span id="source-count-display"></span></label>
+            <input type="range" id="source-count" min="1" max="15" step="1" value="5">
+            
+            <label for="separation">Distance between sources: <span id="separation-display"></span></label>
+            <input type="range" id="separation" max="3" step="any" value="0.5" list="separation-steplist">
+            <datalist id="separation-steplist"></datalist>
+
+            <label for="steering">Pointing angle: <span id="pointing-angle-display"></span></label>
+            <input type="range" id="pointing-angle" min="0" max="180" step="any" value="90">
+
+            <p>
+                <label>Plot: </label>
+                <input type="radio" id="plot-magnitude" name="plot-type"><label for="plot-magnitude">Magnitude</label>
+                <input type="radio" id="plot-wave" name="plot-type" checked><label for="plot-wave">Wave</label>
+            </p>
+
+            <p>
+                <input type="checkbox" id="plot-rad-pattern"><label for="plot-rad-pattern">Show radiation pattern</label>
+            </p>
+
+        </div>
         <script src="main.js"></script>
     </body>
 </html>

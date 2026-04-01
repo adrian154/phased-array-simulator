@@ -1,7 +1,27 @@
-canvas {
+body {
+    font-family: sans-serif;
+}
+
+#main-view,
+#rad-pattern {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
+}
+
+#controls {
+    position: absolute;
+    top: 1em;
+    left: 1em;
+    padding: 1em;
+    background-color: rgba(0, 0, 0, 65%);
+    color: #ffffff;
+    max-width: 20em;
+}
+
+input[type="range"] {
+    width: 100%;
+    margin-bottom: 1em;
 }
